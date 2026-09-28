@@ -2,8 +2,6 @@ import time
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import StratifiedKFold
 import numpy as np
-from collections import Counter
-from scipy import stats
 from utils.metrics import metricas
 
 def int_kfold(X, y, grade, criar_modelo, cv=5, seed=0, imprimir=True, rotulos=None):
@@ -46,29 +44,30 @@ def ext_kfold(X, y, grade, criar_modelo, nome='', n_rep=30, n_folds=10,
               cv_interna=5, media='macro', imprimir=True):
     """Protocolo 30 x 10-folds estratificado.
 
-    grade        : lista de dicionários de configuração
-    criar_modelo : função (dict) -> modelo construído, com fit e predict
+    Devolve (res, hiper, preds, ytes):
+      res   : (n_rep*n_folds, 4) — erro, precisão, cobertura, F-measure
+      hiper : configuração escolhida em cada fold
+      preds : predições no fold de teste (para o voto majoritário)
+      ytes  : rótulos verdadeiros do fold de teste
     """
     X = np.asarray(X, dtype=float)
     y = np.asarray(y)
-    res, hiper = [], []
+    res, hiper, preds, ytes = [], [], [], []
     t0 = time.time()
 
-              
     for rep in range(n_rep):
         skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=rep)
 
         for i_fold, (tr_ext, te_ext) in enumerate(skf.split(X, y)):
-
             esc = StandardScaler().fit(X[tr_ext])
             Xtr, Xte = esc.transform(X[tr_ext]), esc.transform(X[te_ext])
             ytr, yte = y[tr_ext], y[te_ext]
 
             hp = int_kfold(Xtr, ytr, grade, criar_modelo, cv=cv_interna,
                            seed=rep * 100 + i_fold, imprimir=False)
-
             clf = criar_modelo(hp).fit(Xtr, ytr)
-            m = metricas(yte, clf.predict(Xte), media)
+            pred = clf.predict(Xte)
+            m = metricas(yte, pred, media)
 
             if imprimir:
                 print(f'{nome} | rep {rep+1}/{n_rep} | fold {i_fold+1}/{n_folds} '
@@ -76,42 +75,14 @@ def ext_kfold(X, y, grade, criar_modelo, nome='', n_rep=30, n_folds=10,
 
             res.append(m)
             hiper.append(hp)
+            preds.append(pred)
+            ytes.append(yte)
 
-    return np.array(res), hiper
+        if imprimir:
+            print(f'--- {nome}: repetição {rep+1}/{n_rep} ({time.time()-t0:.0f}s) ---')
 
+    return np.array(res), hiper, preds, ytes
 
-METRICAS = ('erro', 'precisão', 'cobertura', 'F-measure')
-
-
-def resumir(res, hiper=None, nome='', conf=0.95, corrigido=False, n_folds=10):
-    """Estimativa pontual, intervalo de confiança e hiperparâmetros escolhidos.
-
-    corrigido : usa a variância de Nadeau e Bengio, que corrige a
-                sobreposição entre os treinos dos folds
-    """
-    res = np.asarray(res)
-    N = len(res)
-    barra = '=' * 52
-
-    if hiper is not None:
-        cont = Counter(str(h) for h in hiper)
-        print(f'\n{barra}\nhiperparâmetros escolhidos em {N} folds'
-              f'{" — " + nome if nome else ""}\n{barra}')
-        for cfg, n in cont.most_common():
-            print(f'  {n:3d}x ({n/N:5.1%})  {cfg}')
-        print(f'\nmoda: {cont.most_common(1)[0][0]}')
-
-    media = res.mean(axis=0)
-    var = res.var(axis=0, ddof=1)
-    var = var * (1 + N / (n_folds - 1)) / N if corrigido else var / N
-    meio = stats.t.ppf(0.5 + conf / 2, N - 1) * np.sqrt(var)
-
-    print(f'\n{barra}\ndesempenho em {N} folds'
-          f'{" — " + nome if nome else ""}\n{barra}')
-    for j, m in enumerate(METRICAS):
-        print(f'  {m:>10}: {media[j]:.4f} ± {meio[j]:.4f}')
-
-    return media, meio
 
 
 

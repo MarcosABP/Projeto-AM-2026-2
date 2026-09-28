@@ -68,32 +68,3 @@ class BayesGaussianoMV:
         return self.classes_[log_num.argmax(axis=1)]
 
 
-
-
-def ajustar_gaussiano(X, y, cv=5, seed=0, gammas=GAMMAS, imprimir=True):
-    """CV estratificada 5-folds sobre os 9 folds de treino, para fixar gamma."""
-    X = np.asarray(X, dtype=float)
-    y = np.asarray(y)
-    acertos = np.zeros((cv, len(gammas)))
-    skf = StratifiedKFold(cv, shuffle=True, random_state=seed)
-
-    for i_fold, (tr, va) in enumerate(skf.split(X, y)):
-      print(f'Rodando fold {i_fold+1}/{cv}  interno')
-      for i, g in enumerate(gammas):
-          try:
-              clf = BayesGaussianoMV(gamma=g).fit(X[tr], y[tr])
-              acertos[i_fold, i] = (clf.predict(X[va]) == y[va]).mean()
-          except np.linalg.LinAlgError:
-              acertos[i_fold, i] = -np.inf     # Sigma singular: nunca vence
-
-    melhor = int(acertos.sum(axis=0).argmax())
-
-    if imprimir:
-        print(' ' * 8 + ''.join(f'{f"g={g:g}":>10}' for g in gammas))
-        for i_f in range(cv):
-            print(f'fold {i_f+1:<3}' + ''.join(f'{a:>10.4f}' for a in acertos[i_f]))
-        print(' ' * 8 + '-' * (10 * len(gammas)))
-        print('média   ' + ''.join(f'{a:>10.4f}' for a in acertos.mean(axis=0)))
-        print(f'melhor: gamma = {gammas[melhor]}')
-
-    return {'gamma': gammas[melhor]}
