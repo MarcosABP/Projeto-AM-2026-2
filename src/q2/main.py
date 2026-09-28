@@ -77,7 +77,7 @@ CLASSIFICADORES = {
     'knn':    ('knn bayesiano',       GRADE_KNN,    MODELO_KNN),
 }
 
-n_rep = 1
+n_rep = 30
 saida = {sigla: rodar_e_salvar(sigla, nome, grade, modelo, n_rep)
          for sigla, (nome, grade, modelo) in CLASSIFICADORES.items()}
 
