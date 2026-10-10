@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 from sklearn.metrics import silhouette_samples, confusion_matrix, adjusted_rand_score
 
-IMGS = Path(__file__).resolve().parent.parent / 'q1/imgs'
+IMGS = Path(__file__).resolve().parent / 'imgs'
 
 
 def _finalizar(fig, nome):
@@ -12,7 +12,7 @@ def _finalizar(fig, nome):
     fig.tight_layout()
     fig.savefig(caminho, dpi=150, bbox_inches='tight')
     print(f'salvo em {caminho}')
-    plt.show()
+    plt.close(fig)
 
 
 def plot_silhueta_por_par(resultados, matriz='Xz', limiar_alerta=50):
