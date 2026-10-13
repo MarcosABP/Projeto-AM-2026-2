@@ -15,7 +15,7 @@ DADOS = RAIZ / 'data'
 RESULTADOS = Path(__file__).resolve().parent / 'results'
 RESULTADOS.mkdir(exist_ok=True)
 
-RODAR = True    # True: roda as 9 x 100 execuções. False: carrega de results/
+RODAR = False    # True: roda as 9 x 100 execuções. False: carrega de results/
 
 nomes = []
 with open(DADOS / 'spambase.names') as arq:

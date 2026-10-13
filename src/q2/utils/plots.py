@@ -393,17 +393,26 @@ def plot_curva_aprendizagem(curva, indice=3, arquivo='q2_d_curva_aprendizagem'):
 
     fig, axs = plt.subplots(1, len(nomes), figsize=(3.3 * len(nomes), 3.9),
                             sharey=True)
+    # faixa do eixo y (compartilhado), para saber quando os rótulos colidem
+    todos = np.concatenate([curva[c][n][:, indice] for c in ('treino', 'teste')
+                            for n in nomes])
+    perto = 0.05 * (todos.max() - todos.min())
+
     for ax, n in zip(axs, nomes):
         tr = curva['treino'][n][:, indice]
         te = curva['teste'][n][:, indice]
         ax.fill_between(x, te, tr, color=cores[n], alpha=0.12, lw=0)
         ax.plot(x, tr, '--', color=cores[n], lw=2)
         ax.plot(x, te, '-', color=cores[n], lw=2, marker='o', ms=3.5)
-        # rótulos diretos no fim das linhas
-        ax.annotate('treino', (x[-1], tr[-1]), xytext=(4, 0),
+        # rótulos diretos no fim das linhas; se os pontos finais estão muito
+        # próximos, afasta o de cima para cima e o de baixo para baixo
+        dy_tr = dy_te = 0
+        if abs(tr[-1] - te[-1]) < perto:
+            dy_tr, dy_te = (6, -6) if tr[-1] >= te[-1] else (-6, 6)
+        ax.annotate('treino', (x[-1], tr[-1]), xytext=(4, dy_tr),
                     textcoords='offset points', va='center', fontsize=8.5,
                     color=TINTA_2)
-        ax.annotate('teste', (x[-1], te[-1]), xytext=(4, 0),
+        ax.annotate('teste', (x[-1], te[-1]), xytext=(4, dy_te),
                     textcoords='offset points', va='center', fontsize=8.5,
                     color=TINTA_2)
         ax.set_title(n)

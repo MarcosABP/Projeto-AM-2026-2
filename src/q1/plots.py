@@ -63,7 +63,8 @@ def plot_silhueta_objetos(resultados, X, par, matriz='Xz'):
     plt.axvline(0, color="k", lw=0.8)
     plt.xlabel("s(i)"); plt.yticks([])
     plt.title(f"Silhueta por objeto — par ({K},{H}) — {matriz}")
-    plt.legend(fontsize=8)
+    # legenda fora do eixo: dentro dele cobria a faixa do cluster pequeno
+    plt.legend(fontsize=8, loc="upper left", bbox_to_anchor=(1.01, 1))
 
     _finalizar(fig, f'q1_silhueta_objetos_{K}x{H}_{matriz}')
 
@@ -93,11 +94,19 @@ def resultado_final(resultados, y, par, matriz='Xz'):
 
     fig, ax = plt.subplots(1, 3, figsize=(15, 4.2))
 
-    lim = np.abs(G).max()
-    im = ax[0].imshow(G, cmap="RdBu_r", vmin=-lim, vmax=lim)
+    # dados crus: G só tem valores >= 0, então a escala é sequencial (0 = claro);
+    # com valores negativos (dados padronizados), divergente centrada em 0
+    if G.min() >= 0:
+        im = ax[0].imshow(G, cmap="Blues", vmin=0, vmax=G.max())
+        escuro = lambda v: v > G.max() / 2
+    else:
+        lim = np.abs(G).max()
+        im = ax[0].imshow(G, cmap="RdBu_r", vmin=-lim, vmax=lim)
+        escuro = lambda v: abs(v) > lim / 2
     for k in range(G.shape[0]):
         for h in range(G.shape[1]):
-            ax[0].text(h, k, f"{G[k,h]:.3f}", ha="center", va="center")
+            ax[0].text(h, k, f"{G[k,h]:.3f}", ha="center", va="center",
+                       color="white" if escuro(G[k, h]) else "black")
     ax[0].set_title("i) Matriz de protótipos G")
     ax[0].set_xlabel("grupo de variáveis"); ax[0].set_ylabel("cluster de objetos")
     ax[0].set_xticks(range(G.shape[1])); ax[0].set_yticks(range(G.shape[0]))
